@@ -1,3 +1,4 @@
+import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from bs4 import BeautifulSoup
@@ -21,25 +22,24 @@ def split_html():
         # 2) Parse max_len
         max_len = int(request.form.get("max_len", 4096))
 
-        # 3) Count the total (raw) characters in the original HTML
+        # 3) Count total (raw) characters
         total_chars = count_characters(source)
 
-        # 4) Split using the raw HTML
+        # 4) Split
         raw_fragments = list(split_message(source, max_len))
 
         fragments_response = []
         for i, raw_fragment in enumerate(raw_fragments, start=1):
-            # This is the exact raw length used by your splitting logic:
             raw_length = len(raw_fragment)
 
-            # Prettify for user-friendly display (optional)
+            # Optionally prettify for display
             soup = BeautifulSoup(raw_fragment, "html.parser")
             prettified = soup.prettify()
 
             fragments_response.append({
                 "filename": f"fragment_{i}.html",
-                "content": prettified,      # Display version
-                "raw_length": raw_length    # Precise length of the raw fragment
+                "content": prettified,
+                "raw_length": raw_length
             })
 
         return jsonify({
@@ -53,4 +53,6 @@ def split_html():
         return jsonify({"error": f"Error processing file: {str(e)}"}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=8002)
+    # For local development. Gunicorn on Railway will use `web: gunicorn app:app`
+    port = int(os.environ.get("PORT", 8002))
+    app.run(debug=True, host="0.0.0.0", port=port)
